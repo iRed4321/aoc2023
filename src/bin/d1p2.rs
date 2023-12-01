@@ -1,41 +1,32 @@
-
-fn process(input: String) -> i32 {
+fn process(input: String) -> usize {
 
     let numbers = vec!["one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
 
-    input
-        .lines()
-        .map(|line| {
+    input.lines().map(|line| {
+        let (mut first, mut last) = (None, None);
 
-            let (mut first, mut last) = (None, None);
+        'outer: for i in 0..=line.len() {
 
-            for i in 1..line.len() {
+            let (start, end) = (line.split_at(i).1 ,line.split_at(line.len() - i).0);
+            
+            for (key, value) in numbers.iter().enumerate() {
+                let key = key+1;
 
-                let line_cut = line.split_at(i);
-                
-                for (key, value) in numbers.iter().enumerate() {
-                    let key = key+ 1;
-                    let key_str = key.to_string();
-
-                    if first.is_none() && (line_cut.0.starts_with(&key_str) || line_cut.0.starts_with(value)) {
-                        first = Some(key);
-                    }
-                    if last.is_none() && (line_cut.1.ends_with(&key_str) || line_cut.1.ends_with(value)) {
-                        last = Some(key);
-                    }
+                if first.is_none() && (start.starts_with(&key.to_string()) || start.starts_with(value)) {
+                    first = Some(key);
                 }
-
+                if last.is_none() && (end.ends_with(&key.to_string()) || end.ends_with(value)) {
+                    last = Some(key);
+                }
                 if first.is_some() && last.is_some() {
-                    break;
+                    break 'outer;
                 }
             }
+        }
 
-            dbg!(first);
-            dbg!(last);
-
-            format!("{}{}", last.unwrap(), first.unwrap()).to_owned().parse::<i32>().unwrap()
-        })
-        .fold(0, |acc, x| acc + x)
+        first.unwrap() * 10 + last.unwrap()
+    })
+    .fold(0, |acc, x| acc + x)
 }
 
 fn main() {
@@ -52,6 +43,6 @@ mod tests {
         let input = include_str!("../../input/d1ex.txt");
     
         let res = process(input.to_owned());
-        // assert_eq!(res, 281);
+        assert_eq!(res, 281);
     }
 }
