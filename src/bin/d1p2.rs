@@ -10,13 +10,13 @@ fn process(input: String) -> usize {
             let (start, end) = (line.split_at(i).1 ,line.split_at(line.len() - i).0);
             
             for (key, value) in numbers.iter().enumerate() {
-                let key = key+1;
+                let keystr = (key + 1).to_string();
 
-                if first.is_none() && (start.starts_with(&key.to_string()) || start.starts_with(value)) {
-                    first = Some(key);
+                if first.is_none() && (start.starts_with(&keystr) || start.starts_with(value)) {
+                    first = Some(key+1);
                 }
-                if last.is_none() && (end.ends_with(&key.to_string()) || end.ends_with(value)) {
-                    last = Some(key);
+                if last.is_none() && (end.ends_with(&keystr) || end.ends_with(value)) {
+                    last = Some(key+1);
                 }
                 if first.is_some() && last.is_some() {
                     break 'outer;
