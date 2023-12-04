@@ -19,7 +19,7 @@ fn process(input: String) -> usize {
         
         red * green * blue
     })
-    .fold(0, |acc, x| acc + x)
+    .sum()
 }
 
 fn main() {

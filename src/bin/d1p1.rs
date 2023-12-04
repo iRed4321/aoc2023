@@ -13,7 +13,7 @@ fn main() {
             format!("{}{}", first, last).to_owned().parse::<i32>().unwrap()
         }
         )
-        .fold(0, |acc, x| acc + x);
+        .sum::<i32>();
 
     println!("{}", res);
 }

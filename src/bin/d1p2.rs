@@ -26,7 +26,7 @@ fn process(input: String) -> usize {
 
         first.unwrap() * 10 + last.unwrap()
     })
-    .fold(0, |acc, x| acc + x)
+    .sum()
 }
 
 fn main() {

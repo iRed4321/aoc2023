@@ -17,7 +17,7 @@ fn process(input: String) -> usize {
         
         Some(i+1)
     })
-    .fold(0, |acc, x| acc + x)
+    .sum()
 }
 
 fn main() {
