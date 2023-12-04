@@ -23,11 +23,11 @@ fn process(input: String) -> usize {
         }
     }
 
-    let mut gears : HashMap<(usize,usize), Vec<(usize,usize)>> = HashMap::new();
+    let mut gears = HashMap::new();
 
     nums.iter().for_each(|((i,j), num)| {
         'outer: for x in (*i as i32 - 1)..=(*i as i32 + 1) {
-            for y in (*j as i32 - 1)..=(*j  as i32 + num.to_string().len() as i32) {
+            for y in (*j as i32 - 1)..=(*j as i32 + num.to_string().len() as i32) {
                 let Some(c) = tab.get(&(x as usize, y as usize)) else {continue;};
                 if c == &'*' {
                     gears.entry((x as usize, y as usize)).or_insert(Vec::new()).push((*i, *j));

@@ -1,7 +1,5 @@
 fn process(input: String) -> usize {
 
-    let input = input.to_owned();
-
     let mut cards = input.lines()
     .map(|card|{
         let (winning, having) = card.split(":").last().unwrap().split_once("|").unwrap();
@@ -9,12 +7,12 @@ fn process(input: String) -> usize {
         let having = having.trim().split_whitespace().collect::<Vec<&str>>();
 
         (winning, having, 1)
-    }).collect::<Vec<(Vec<&str>, Vec<&str>, usize)>>();
+    }).collect::<Vec<_>>();
 
     for i in 0..cards.len() {
         let (winning, having, currcount) = cards.get(i).unwrap();
         let countwin = winning.iter().filter(|&x| having.contains(x)).count();
-
+        
         let currcount = currcount.to_owned();
 
         for j in i+1..=i+countwin {
@@ -22,6 +20,7 @@ fn process(input: String) -> usize {
                 *countofnext += currcount;
             }
         }
+
     }
     
     cards.iter().map(|(_, _, count)| count).sum()
