@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 fn process(input: String) -> usize {
 
     input.lines().map(|line|{

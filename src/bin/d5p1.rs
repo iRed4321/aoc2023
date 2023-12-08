@@ -1,4 +1,3 @@
-use std::slice::SliceIndex;
 
 fn process(input: String) -> usize {
 
@@ -15,24 +14,18 @@ fn process(input: String) -> usize {
     let seeds = input.remove(0).first().unwrap().to_owned();
 
     let input = input.iter().map(|x| {
-        x.iter().map(|x| {
-            let curr = x.get(1).unwrap().to_owned();
-            let next = x.get(0).unwrap().to_owned();
-            let length = x.get(2).unwrap().to_owned();
-            (curr, next, length)
-        }).collect::<Vec<_>>()
+        x.iter().map(|x|(x[1], x[0], x[2])).collect::<Vec<(usize, usize, usize)>>()
     }).collect::<Vec<_>>();
 
     let mut all_last: Vec<usize> = vec![];
 
     for seed in seeds.iter() {
         let mut last = seed.to_owned();
-        'mid: for input in input.iter(){
+        for input in input.iter(){
             for (curr, next, length) in input.iter(){
-                let index = last - curr;
-                if index <= *length {
-                    last = next + index;
-                    break 'mid;
+                if last >= *curr && last <= *curr + *length {
+                    last = next + (last - curr);
+                    break;
                 }
             }
         }
