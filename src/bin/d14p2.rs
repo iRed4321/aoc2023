@@ -1,29 +1,59 @@
-use std::collections::HashSet;
+use core::slice;
+use std::collections::{HashSet, HashMap};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
+use std::fmt::{Debug, Formatter};
 
 use ndarray::prelude::*;
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use strum::{EnumIter, IntoEnumIterator, Display};
 
-fn pretty_print(input: &Vec<Vec<char>>) {
-    for line in input {
-        for c in line {
-            print!("{}", c);
-        }
-        println!();
-    }
-}
-
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 enum Field{
     None,
     Bloc,
     Move,
 }
 
+impl Debug for Field {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Field::None => write!(f, "."),
+            Field::Bloc => write!(f, "#"),
+            Field::Move => write!(f, "O"),
+        }
+    }
+}
+
+fn pretty_print(input: &Array2<Field>) {
+    for line in input.rows() {
+        for c in line {
+            print!("{:?}", c);
+        }
+        println!();
+    }
+}
+
+#[derive(EnumIter, Display, Clone, Copy, PartialEq, Eq, Hash)]
+enum Direction{
+    North,
+    West,
+    South,
+    East,
+}
+
+impl Direction {
+    fn axis(&self) -> Axis {
+        match self {
+            Direction::North | Direction::South => Axis(1),
+            Direction::West | Direction::East => Axis(0),
+        }
+    }
+}
+
 fn process(input: String) -> usize {
 
-    let mut input : Vec<Vec<_>> = input.lines().map(|line|
+    let input : Vec<Vec<_>> = input.lines().map(|line|
         line.chars().map(|c| match c{
             '.' => Field::None,
             '#' => Field::Bloc,
@@ -34,129 +64,58 @@ fn process(input: String) -> usize {
     ).collect();
 
     let mut input2 = Array2::from_shape_vec((input.len(), input[0].len()), input.clone().into_iter().flatten().collect()).unwrap();
-    println!("{:?}", input2);
 
-    // let mut set = HashSet::new();
-    // let mut hasher = DefaultHasher::new();
+    let timer = std::time::Instant::now();
 
-    // let timer = std::time::Instant::now();
+    let mut last_fall_on = 0;
 
-    // for _ in 0..1000000000_usize{
-        
-            //fall north
-            for col in 0..input[0].len() {
-                let mut last_fall_on = 0;
-                for row in 0..input.len() {
-                    match input[row][col] {
+    for i in 0..1_000_000_000 {
+
+        for direction in Direction::iter() {
+
+            input2.axis_iter_mut(direction.axis()).into_iter().for_each(|mut lane|{
+
+                match direction {
+                    Direction::North | Direction::West => (),
+                    Direction::South | Direction::East => lane.invert_axis(Axis(0)),
+                }
+                
+                last_fall_on = 0;
+
+                for index_in in 0..lane.len(){
+                    match lane[index_in] {
                         Field::None => (),
-                        Field::Bloc => last_fall_on = row+1,
+                        Field::Bloc => last_fall_on = index_in + 1,
                         Field::Move => {
-                            input[row][col] = Field::None;
-                            input[last_fall_on][col] = Field::Move;
+                            lane[index_in] = Field::None;
+                            lane[last_fall_on] = Field::Move;
                             last_fall_on += 1;
                         },
-                    }
+                    };
                 }
-            }
 
-            // equivalent north with ndarray
+            });
+            
+        }
 
-            for mut col in input2.columns_mut() {
-                let mut last_fall_on = 0;
-                for (index, mut elem) in col.iter_mut().enumerate() {
-                    match elem {
-                        Field::None => (),
-                        Field::Bloc => last_fall_on = index+1,
-                        Field::Move => {
-                            elem = &mut Field::None;
-                            col[last_fall_on] = Field::Move;
-                            last_fall_on += 1;
-                        },
-                    }
-                }
-            }
-        
-            // //fall west
-            // for row in 0..input.len() {
-            //     let mut last_fall_on = 0;
-            //     for col in 0..input.len() {
-            //         match input[row][col] {
-            //             Field::None => (),
-            //             Field::Bloc => last_fall_on = col+1,
-            //             Field::Move => {
-            //                 input[row][col] = Field::None;
-            //                 input[row][last_fall_on] = Field::Move;
-            //                 last_fall_on += 1;
-            //             },
-            //         }
-            //     }
-            // }
-        
-            // //fall south
-            // for col in 0..input[0].len() {
-            //     let mut last_fall_on = input.len()-1;
-            //     for row in (0..input.len()).rev() {
-            //         match input[row][col] {
-            //             Field::None => (),
-            //             Field::Bloc => last_fall_on = row.checked_sub(1).unwrap_or(0),
-            //             Field::Move => {
-            //                 input[row][col] = Field::None;
-            //                 input[last_fall_on][col] = Field::Move;
-            //                 if last_fall_on > 0 {
-            //                     last_fall_on -= 1;
-            //                 }
-            //             },
-            //         }
-            //     }
-            // }
-        
-            // //fall east
-            // for row in 0..input.len() {
-            //     let mut last_fall_on = input[0].len()-1;
-            //     for col in (0..input[0].len()).rev() {
-            //         match input[row][col] {
-            //             Field::None => (),
-            //             Field::Bloc => last_fall_on = col.checked_sub(1).unwrap_or(0),
-            //             Field::Move => {
-            //                 input[row][col] = Field::None;
-            //                 input[row][last_fall_on] = Field::Move;
-            //                 if last_fall_on > 0 {
-            //                     last_fall_on -= 1;
-            //                 }
-            //             },
-            //         }
-            //     }
-            // }
+        if i % 100_000 == 0 {
+            println!("{}: {:?}", i, timer.elapsed());
+        }
 
-            // input.hash(&mut hasher);
-            // let hash = hasher.finish();
-
-            // if set.contains(&hash) {
-            //     break;
-            // } else {
-            //     set.insert(hash);
-
-            //     // if set.len() % 1_000_000 == 0 {
-            //     //     println!("time: {:?}", timer.elapsed());
-            //     //     println!("set len: {}", set.len());
-            //     // }
-            // }
-
-    // }
-
-    // println!("{:?}", pretty_print(&input));
+    }
+    
+    pretty_print(&input2);
 
     let height = input.len();
 
-    input.iter().enumerate().map(|(row, line)|{
-        println!("height-row: {}", height - row);
+    input2.rows().into_iter().enumerate().map(|(row, line)|{
         line.iter().filter(|c| **c == Field::Move).count() * (height - row)
     }).sum()
     
 }
 
 fn main() {
-    let input = include_str!("../../input/d14ex.txt");
+    let input = include_str!("../../input/d14.txt");
     println!("{}", process(input.to_owned()));
 }
 
@@ -169,6 +128,6 @@ mod tests {
         let input = include_str!("../../input/d14ex.txt");
     
         let res = process(input.to_owned());
-        assert_eq!(res, 136);
+        assert_eq!(res, 69);
     }
 }
