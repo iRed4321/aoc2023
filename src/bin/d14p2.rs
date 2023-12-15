@@ -8,24 +8,17 @@ use ndarray::prelude::*;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use strum::{EnumIter, IntoEnumIterator, Display};
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
-enum Field{
-    None,
-    Bloc,
-    Move,
-}
+// impl Debug for Field {
+//     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+//         match self {
+//             Field::None => write!(f, "."),
+//             Field::Bloc => write!(f, "#"),
+//             Field::Move => write!(f, "O"),
+//         }
+//     }
+// }
 
-impl Debug for Field {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Field::None => write!(f, "."),
-            Field::Bloc => write!(f, "#"),
-            Field::Move => write!(f, "O"),
-        }
-    }
-}
-
-fn pretty_print(input: &Array2<Field>) {
+fn pretty_print(input: &Array2<Option<bool>>) {
     for line in input.rows() {
         for c in line {
             print!("{:?}", c);
@@ -55,9 +48,9 @@ fn process(input: String) -> usize {
 
     let input : Vec<Vec<_>> = input.lines().map(|line|
         line.chars().map(|c| match c{
-            '.' => Field::None,
-            '#' => Field::Bloc,
-            'O' => Field::Move,
+            '.' => Some(false),
+            '#' => None,
+            'O' => Some(true),
             _ => unreachable!(),
         
         }).collect()
@@ -84,11 +77,11 @@ fn process(input: String) -> usize {
 
                 for index_in in 0..lane.len(){
                     match lane[index_in] {
-                        Field::None => (),
-                        Field::Bloc => last_fall_on = index_in + 1,
-                        Field::Move => {
-                            lane[index_in] = Field::None;
-                            lane[last_fall_on] = Field::Move;
+                        Some(false) => (),
+                        None => last_fall_on = index_in + 1,
+                        Some(true) => {
+                            lane[index_in] = Some(false);
+                            lane[last_fall_on] = Some(true);
                             last_fall_on += 1;
                         },
                     };
@@ -109,13 +102,13 @@ fn process(input: String) -> usize {
     let height = input.len();
 
     input2.rows().into_iter().enumerate().map(|(row, line)|{
-        line.iter().filter(|c| **c == Field::Move).count() * (height - row)
+        line.iter().filter(|c| **c == Some(true)).count() * (height - row)
     }).sum()
     
 }
 
 fn main() {
-    let input = include_str!("../../input/d14.txt");
+    let input = include_str!("../../input/d14ex.txt");
     println!("{}", process(input.to_owned()));
 }
 
