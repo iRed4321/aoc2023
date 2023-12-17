@@ -1,31 +1,6 @@
-use core::slice;
-use std::collections::{HashSet, HashMap};
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
-use std::fmt::{Debug, Formatter};
-
+use std::collections::HashMap;
 use ndarray::prelude::*;
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use strum::{EnumIter, IntoEnumIterator, Display};
-
-// impl Debug for Field {
-//     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-//         match self {
-//             Field::None => write!(f, "."),
-//             Field::Bloc => write!(f, "#"),
-//             Field::Move => write!(f, "O"),
-//         }
-//     }
-// }
-
-fn pretty_print(input: &Array2<Option<bool>>) {
-    for line in input.rows() {
-        for c in line {
-            print!("{:?}", c);
-        }
-        println!();
-    }
-}
 
 #[derive(EnumIter, Display, Clone, Copy, PartialEq, Eq, Hash)]
 enum Direction{
@@ -56,17 +31,16 @@ fn process(input: String) -> usize {
         }).collect()
     ).collect();
 
-    let mut input2 = Array2::from_shape_vec((input.len(), input[0].len()), input.clone().into_iter().flatten().collect()).unwrap();
-
-    let timer = std::time::Instant::now();
-
+    let mut input = Array2::from_shape_vec((input.len(), input[0].len()), input.clone().into_iter().flatten().collect()).unwrap();
     let mut last_fall_on = 0;
-
-    for i in 0..1_000_000_000 {
+    let mut cache = HashMap::new();
+    let mut i = 0;
+    
+    while i < 1_000_000_000 {
 
         for direction in Direction::iter() {
 
-            input2.axis_iter_mut(direction.axis()).into_iter().for_each(|mut lane|{
+            input.axis_iter_mut(direction.axis()).into_iter().for_each(|mut lane|{
 
                 match direction {
                     Direction::North | Direction::West => (),
@@ -74,41 +48,44 @@ fn process(input: String) -> usize {
                 }
                 
                 last_fall_on = 0;
-
+    
                 for index_in in 0..lane.len(){
-                    match lane[index_in] {
-                        Some(false) => (),
-                        None => last_fall_on = index_in + 1,
+                    last_fall_on = match lane[index_in] {
+                        Some(false) => continue,
+                        None => index_in + 1,
                         Some(true) => {
                             lane[index_in] = Some(false);
                             lane[last_fall_on] = Some(true);
-                            last_fall_on += 1;
+                            last_fall_on + 1
                         },
                     };
                 }
-
+    
             });
             
         }
 
-        if i % 100_000 == 0 {
-            println!("{}: {:?}", i, timer.elapsed());
+        if let Some(&prev) = cache.get(&input) {
+            let cycle = i - prev;
+            let remaining = (1_000_000_000 - i) % cycle;
+            i = 1_000_000_000 - remaining;
+            cache.clear();
+        } else {
+            cache.insert(input.clone(), i);
         }
+        
+        i += 1;
 
     }
     
-    pretty_print(&input2);
-
-    let height = input.len();
-
-    input2.rows().into_iter().enumerate().map(|(row, line)|{
-        line.iter().filter(|c| **c == Some(true)).count() * (height - row)
+    input.rows().into_iter().enumerate().map(|(row, line)|{
+        line.iter().filter(|c| **c == Some(true)).count() * (input.dim().0 - row)
     }).sum()
     
 }
 
 fn main() {
-    let input = include_str!("../../input/d14ex.txt");
+    let input = include_str!("../../input/d14.txt");
     println!("{}", process(input.to_owned()));
 }
 
@@ -121,6 +98,6 @@ mod tests {
         let input = include_str!("../../input/d14ex.txt");
     
         let res = process(input.to_owned());
-        assert_eq!(res, 69);
+        assert_eq!(res, 64);
     }
 }
